@@ -127,8 +127,27 @@ export function serveSceneState(fakeObs: FakeOBSServer, state: FakeSceneState): 
     return { sceneItemId: addItem(String(data.sceneName), inputName, data.sceneItemEnabled) };
   });
   fakeObs.respondWith("CreateSceneItem", (data) => {
-    if (!state.inputs[String(data.sourceName)]) throw new FakeOBSRequestError(600, "No source was found");
+    // A scene can be a source in another scene, as OBS nests scenes.
+    if (!state.inputs[String(data.sourceName)] && !state.scenes[String(data.sourceName)]) throw new FakeOBSRequestError(600, "No source was found");
     return { sceneItemId: addItem(String(data.sceneName), String(data.sourceName), data.sceneItemEnabled) };
+  });
+  fakeObs.respondWith("RemoveInput", (data) => {
+    input(data);
+    delete state.inputs[String(data.inputName)];
+    for (const items of Object.values(state.scenes)) {
+      for (let index = items.length - 1; index >= 0; index -= 1) {
+        if (items[index]!.sourceName === data.inputName) items.splice(index, 1);
+      }
+    }
+    return {};
+  });
+  fakeObs.respondWith("SetCurrentProgramScene", (data) => done(() => {
+    scene(data);
+    state.program = String(data.sceneName);
+  })());
+  fakeObs.respondWith("TriggerMediaInputAction", (data) => {
+    input(data);
+    return {};
   });
   fakeObs.respondWith("RemoveSceneItem", (data) => {
     const items = scene(data);

@@ -19,6 +19,7 @@ export const TOOL_GROUPS = [
   "outputs",
   "config",
   "ui",
+  "graphics",
   "protocol",
 ] as const;
 

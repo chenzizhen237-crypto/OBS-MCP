@@ -4372,6 +4372,134 @@
     }
   },
   {
+    "name": "obs-graphic-hide",
+    "title": "Hide Graphic",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "slot": {
+          "default": "title",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[\\w .-]+$"
+        },
+        "remove": {
+          "default": false,
+          "description": "Delete the slot's input instead of hiding it",
+          "type": "boolean"
+        }
+      },
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "obs-graphic-list",
+    "title": "List Graphics",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "obs-graphic-show",
+    "title": "Show Graphic",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "slot": {
+          "default": "title",
+          "description": "Name of the graphic, e.g. title, guest, logo; one graphic per slot",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[\\w .-]+$"
+        },
+        "text": {
+          "description": "Text to show; give this or image",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "image": {
+          "description": "Absolute path of an image file on the machine running OBS; give this or text",
+          "type": "string",
+          "minLength": 1
+        },
+        "position": {
+          "default": "lower-third",
+          "description": "Where on screen",
+          "type": "string",
+          "enum": [
+            "top-left",
+            "top",
+            "top-right",
+            "left",
+            "center",
+            "right",
+            "bottom-left",
+            "bottom",
+            "bottom-right",
+            "lower-third",
+            "full"
+          ]
+        },
+        "seconds": {
+          "description": "Hide after this many seconds; needs this server to keep running",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        },
+        "style": {
+          "description": "Overrides for this graphic only; the theme stays the same",
+          "type": "object",
+          "properties": {
+            "size": {
+              "description": "Font size at 1080p",
+              "type": "integer",
+              "minimum": 8,
+              "maximum": 512
+            },
+            "color": {
+              "description": "Text color, #RRGGBB",
+              "type": "string",
+              "pattern": "^#(?:[0-9a-f]{6}|[0-9a-f]{8})$"
+            },
+            "font": {
+              "description": "Font family",
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "includeScreenshot": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
     "name": "obs-offset-media-input-cursor",
     "title": "Offset Media Input Cursor",
     "inputSchema": {
@@ -4558,6 +4686,87 @@
     }
   },
   {
+    "name": "obs-package-theme",
+    "title": "Graphics Theme",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "set": {
+          "description": "Fields to change; leave out to read the theme",
+          "type": "object",
+          "properties": {
+            "font": {
+              "type": "object",
+              "properties": {
+                "face": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Font family installed on the machine running OBS"
+                },
+                "size": {
+                  "type": "integer",
+                  "minimum": 8,
+                  "maximum": 512,
+                  "description": "Point size at a 1080p canvas; scaled for other canvas heights"
+                },
+                "style": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Font style name, e.g. Regular or Bold"
+                }
+              }
+            },
+            "textColor": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-f]{6}|[0-9a-f]{8})$",
+              "description": "Text color as #RRGGBB or #AARRGGBB"
+            },
+            "outline": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "color": {
+                  "type": "string",
+                  "pattern": "^#(?:[0-9a-f]{6}|[0-9a-f]{8})$",
+                  "description": "Outline color; Windows text only, macOS and Linux outlines are black"
+                },
+                "size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20
+                }
+              }
+            },
+            "shadow": {
+              "type": "boolean",
+              "description": "Drop shadow; macOS and Linux text only"
+            },
+            "marginPercent": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 20,
+              "description": "Distance from the canvas edge, as a percentage of its width and height"
+            }
+          }
+        },
+        "restyle": {
+          "default": true,
+          "description": "Apply the new style to text graphics already on screen",
+          "type": "boolean"
+        }
+      },
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
     "name": "obs-pause-record",
     "title": "Pause Recording",
     "inputSchema": {
@@ -4582,6 +4791,104 @@
       "readOnlyHint": false,
       "destructiveHint": false,
       "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "obs-play-intro",
+    "title": "Play Intro",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Absolute path of the video on the machine running OBS"
+        },
+        "thenScene": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Scene to switch to when the intro ends"
+        },
+        "introScene": {
+          "default": "Intro",
+          "description": "Scene that plays the intro; created if missing",
+          "type": "string",
+          "minLength": 1
+        },
+        "maxSeconds": {
+          "default": 600,
+          "description": "Switch to thenScene after this long even if OBS never reports the end; needs this server to keep running",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        }
+      },
+      "required": [
+        "file",
+        "thenScene"
+      ],
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "obs-play-video",
+    "title": "Play Video",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Absolute path of the video on the machine running OBS"
+        },
+        "slot": {
+          "default": "video",
+          "description": "Graphic slot to play in",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[\\w .-]+$"
+        },
+        "position": {
+          "default": "full",
+          "description": "Where on screen; full fits it inside the title-safe margin",
+          "type": "string",
+          "enum": [
+            "top-left",
+            "top",
+            "top-right",
+            "left",
+            "center",
+            "right",
+            "bottom-left",
+            "bottom",
+            "bottom-right",
+            "lower-third",
+            "full"
+          ]
+        },
+        "loop": {
+          "default": false,
+          "description": "Loop until hidden instead of playing once",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "file"
+      ],
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
       "openWorldHint": false
     }
   },

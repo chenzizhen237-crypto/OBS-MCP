@@ -36,6 +36,8 @@ import * as demo from "./demo.js";
 import * as sceneAudit from "./scene-audit.js";
 import * as streamPreflight from "./stream-preflight.js";
 import * as streamWatch from "./stream-watch.js";
+import * as graphics from "./graphics.js";
+import * as graphicsMedia from "./graphics-media.js";
 import { withStructuredToolResults } from "./results.js";
 import { liveConfirmationEnabled, withLiveConfirmation } from "./confirm.js";
 import { ALL_TOOLS, scopedServer, type RegisteredTool, type ToolFilter, type ToolGroup } from "./toolsets.js";
@@ -67,6 +69,8 @@ const MODULES: ReadonlyArray<[ToolGroup, { initialize(server: McpServer, client:
   ["scene-items", snapshots],
   ["scenes", applyScene],
   ["scenes", sceneAudit],
+  ["graphics", graphics],
+  ["graphics", graphicsMedia],
 ];
 
 /**

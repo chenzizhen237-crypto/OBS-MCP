@@ -18,10 +18,11 @@ const GROUP_DESCRIPTIONS: Record<ToolGroup, string> = {
   filters: "source filters",
   transitions: "transitions, overrides, the T-Bar",
   record: "recording, chapters, preflight, clips, watched takes, trimming, contact sheets",
-  stream: "streaming and captions",
+  stream: "streaming, captions, stream preflight, stream health watch",
   outputs: "virtual camera, replay buffer, and generic outputs",
   config: "profiles, scene collections, video settings, persistent data",
   ui: "studio mode, dialogs, projectors",
+  graphics: "titles, images, and videos in the Overlays scene, the package theme, intros",
   protocol: "describing and calling any OBS request, request batches",
 };
 

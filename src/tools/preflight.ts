@@ -70,7 +70,7 @@ async function checkOutputsIdle(client: OBSWebSocketClient): Promise<PreflightCh
     : { id: "record-idle", status: "pass", message: "Recording is not active" };
 }
 
-function isLocalObs(client: OBSWebSocketClient): boolean {
+export function isLocalObs(client: OBSWebSocketClient): boolean {
   try {
     return LOCAL_HOSTS.has(new URL(client.getConnectionStatus().url).hostname);
   } catch {

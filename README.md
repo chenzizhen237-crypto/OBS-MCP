@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Tom-R-Main/OBS-MCP/actions/workflows/ci.yml/badge.svg)](https://github.com/Tom-R-Main/OBS-MCP/actions/workflows/ci.yml)
 
-OBS MCP gives MCP clients a current, inspectable interface to OBS Studio. It exposes 178 tools for scenes, sources, audio, transitions, filters, recording, streaming, canvases, and the rest of the OBS WebSocket v5 request surface.
+OBS MCP gives MCP clients a current, inspectable interface to OBS Studio. It exposes 184 tools for scenes, sources, audio, transitions, filters, recording, streaming, canvases, and the rest of the OBS WebSocket v5 request surface.
 
 The server is built against MCP 2026-07-28 and still accepts legacy 2025-era clients. MCP discovery stays available when OBS is closed, and the server reconnects in the background when OBS returns.
 
@@ -110,7 +110,7 @@ The server never prints the password. Connection and protocol diagnostics are wr
 
 ## Tool surface
 
-The 178 tools are organized around the OBS protocol rather than a smaller opinionated workflow:
+The 184 tools are organized around the OBS protocol rather than a smaller opinionated workflow:
 
 - server status, version information, statistics, hotkeys, and studio mode
 - scenes, groups, sources, filters, and scene items
@@ -125,6 +125,7 @@ The 178 tools are organized around the OBS protocol rather than a smaller opinio
 - `obs-trim-take`, which cuts dead time out of a recording, and `obs-contact-sheet`, which tiles frames from it into one image (see [Trimming a take](#trimming-a-take))
 - a stream preflight (`obs-stream-preflight`) that checks the service, key, encoder, bitrate, performance, and streamed audio before going live
 - `obs-stream-watch-start`, `obs-stream-watch-status`, and `obs-stream-watch-stop`, which watch a live stream's bitrate, dropped frames, congestion, reconnects, audio, and picture and rate its health (see [Watching a stream](#watching-a-stream))
+- `obs-graphic-show`, `obs-graphic-hide`, and `obs-graphic-list`, which put titles and images on screen in named slots styled by a theme (`obs-package-theme`), and `obs-play-video` and `obs-play-intro` for clips and intros (see [Graphics](#graphics))
 - `obs-apply-scene`, which takes a description of a scene and makes OBS match it (see [Describing a scene](#describing-a-scene))
 - `obs-snapshot` and `obs-restore`, which save the state of inputs and scene items and later undo changes to them (see [Undoing changes](#undoing-changes))
 - `obs-capture-window` (macOS), which points a `screen_capture` input at a window or app by name, silences it, and fits it to the canvas
@@ -154,6 +155,7 @@ Every tool is registered by default. Clients load each registered tool's definit
 | `outputs` | virtual camera, replay buffer, and generic outputs |
 | `config` | profiles, scene collections, video settings, persistent data |
 | `ui` | studio mode, dialogs, projectors |
+| `graphics` | titles, images, and videos in the Overlays scene, the package theme, and intros |
 | `protocol` | `obs-describe-request`, the generic `obs-call-request`, and `obs-batch` |
 
 `core` expands to `general`, `scenes`, `scene-items`, `sources`, `inputs`, and `record` (93 tools). `OBS_MCP_TOOLSETS=core OBS_MCP_READ_ONLY=true` gives a 42-tool inspection-only server. The server refuses to start when a group or tool name is unknown.
@@ -250,6 +252,29 @@ Before going live, `obs-stream-preflight` checks, without changing anything:
 | `good` | none of the above |
 
 Each rating comes with its reasons. `obs://stream/health` shows the same data and updates when a warning is raised or the stream goes live or offline. The watch tools are read-only, so they are available in read-only mode and to every client sharing a server, whoever holds control.
+
+### Graphics
+
+Graphics are titles, captions, logos, and video clips drawn over the picture. They live in one scene, `Overlays`, which the first graphic creates and adds on top of every other scene, so a title stays up when the program scene changes. Scenes created later get it the next time a graphic is shown. Scenes that play an intro never get it.
+
+Each graphic has a slot name, such as `title`, `guest`, or `logo`, and one input in `Overlays` named `Graphic: <slot>`. Showing a slot again changes that input instead of adding another:
+
+```json
+{ "slot": "title", "text": "Day 3: building an OBS MCP", "position": "lower-third", "seconds": 30 }
+```
+
+- `position` is a word: `top-left`, `top`, `top-right`, `left`, `center`, `right`, `bottom-left`, `bottom`, `bottom-right`, `lower-third`, or `full`. Positions keep a margin from the canvas edge (5% by default), so the same command works at any canvas size. `full` scales the item to fit inside the margin.
+- `text` uses OBS's text source for the platform OBS runs on (GDI+ on Windows, FreeType elsewhere); `image` takes a file path on that machine. A slot keeps its kind: a text slot cannot become an image.
+- `seconds` hides the graphic later. Like a take deadline, it needs the server to keep running.
+- The result includes a screenshot of the program scene, so the agent can check the graphic before moving on.
+
+`obs-graphic-hide` hides a slot, or with `remove: true` deletes its input. `obs-graphic-list` shows each slot's text or file, whether it is showing, its position, its hide timer, and which scenes show `Overlays`.
+
+The theme styles every text graphic: font family, size (at 1080p; scaled for other canvas heights), style, text color, outline, shadow, and margin. It is `theme.json` in the package folder: `OBS_MCP_PACKAGE_DIR`, or `package/` in the state directory. `obs-package-theme` reads it, or with `set` changes it and restyles the text graphics already on screen. `obs-graphic-show` also takes a `style` with `size`, `color`, and `font` for one graphic.
+
+`obs-play-video` plays a file in a slot on top of the stream, once by default (it hides when OBS reports the end) or looping until hidden. Playing a slot again restarts it. `obs-play-intro` plays a file full screen in its own scene (`Intro` by default), switches the program scene to it, and switches to `thenScene` when the video ends, or after `maxSeconds` if OBS never reports the end. If someone switches scenes during the intro, it stays where they put it.
+
+OBS WebSocket cannot set the show and hide transitions of a scene item, so graphics appear and disappear without animation. Animated templates are planned (see [docs/graphics-package.md](docs/graphics-package.md)).
 
 ### Bounded software demos
 
@@ -371,7 +396,7 @@ Test the file users will actually install with:
 npm run test:package
 ```
 
-That command creates `dist/obs-studio.mcpb`, extracts it into a temporary directory, validates its manifest and source contents, checks all 178 tool definitions, and calls the extracted server through MCP against fake OBS, including a read-only scene audit.
+That command creates `dist/obs-studio.mcpb`, extracts it into a temporary directory, validates its manifest and source contents, checks all 184 tool definitions, and calls the extracted server through MCP against fake OBS, including a read-only scene audit.
 
 ### Live OBS tests
 
