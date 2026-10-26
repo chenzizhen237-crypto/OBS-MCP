@@ -49,6 +49,7 @@ describe("resources", () => {
       "obs://status",
       "obs://scenes",
       "obs://take/current",
+      "obs://stream/health",
       "obs://scene/Demo/items",
       "obs://scene/Be%20Right%20Back/items",
     ]));

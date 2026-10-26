@@ -7218,6 +7218,98 @@
     }
   },
   {
+    "name": "obs-stream-preflight",
+    "title": "Stream Preflight",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "maxBitrateKbps": {
+          "description": "The service's bitrate limit in kbps (video plus audio), e.g. 6000 for Twitch",
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "obs-stream-watch-start",
+    "title": "Watch Stream Health",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "targetKbps": {
+          "description": "Expected total bitrate in kbps; read from the profile in Simple output mode when left out",
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "deadAirSeconds": {
+          "default": 10,
+          "description": "Seconds of silence on the streamed track before dead air is reported",
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 600
+        },
+        "silenceThresholdDb": {
+          "default": -50,
+          "description": "Streamed audio below this level counts as silence",
+          "type": "number",
+          "maximum": 0
+        },
+        "pictureChecks": {
+          "default": true,
+          "description": "Sample the program output for a black picture",
+          "type": "boolean"
+        }
+      },
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "obs-stream-watch-status",
+    "title": "Stream Health",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "obs-stream-watch-stop",
+    "title": "Stop Watching Stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
     "name": "obs-take-mark",
     "title": "Mark Take",
     "inputSchema": {

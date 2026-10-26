@@ -42,7 +42,7 @@ async function request(client: OBSWebSocketClient, requestType: string, data?: J
   return isObject(response) ? response : {};
 }
 
-async function profileParameter(
+export async function profileParameter(
   client: OBSWebSocketClient,
   parameterCategory: string,
   parameterName: string,
@@ -53,7 +53,7 @@ async function profileParameter(
 }
 
 /** Runs one check, turning an unexpected request failure into an "unknown" result. */
-async function runCheck(id: string, check: () => Promise<PreflightCheck | PreflightCheck[]>): Promise<PreflightCheck[]> {
+export async function runCheck(id: string, check: () => Promise<PreflightCheck | PreflightCheck[]>): Promise<PreflightCheck[]> {
   try {
     const result = await check();
     return Array.isArray(result) ? result : [result];
@@ -115,8 +115,8 @@ async function checkDiskSpace(client: OBSWebSocketClient, minFreeDiskMb: number)
     : { id: "disk-space", status: "pass", message: `${free} MB free` };
 }
 
-const NON_MAC_ENCODER = /nvenc|qsv|amd|amf|jim_/i;
-const MAC_ONLY_ENCODER = /apple|videotoolbox/i;
+export const NON_MAC_ENCODER = /nvenc|qsv|amd|amf|jim_/i;
+export const MAC_ONLY_ENCODER = /apple|videotoolbox/i;
 
 async function recordEncoder(client: OBSWebSocketClient): Promise<{ mode: string; encoder: string | null }> {
   const mode = await profileParameter(client, "Output", "Mode") ?? "Simple";
@@ -251,7 +251,7 @@ async function checkAudio(client: OBSWebSocketClient, expectSilent: boolean, req
   };
 }
 
-async function checkSceneItems(client: OBSWebSocketClient): Promise<PreflightCheck> {
+export async function checkSceneItems(client: OBSWebSocketClient): Promise<PreflightCheck> {
   const program = await request(client, "GetCurrentProgramScene");
   const sceneName = program.currentProgramSceneName ?? program.sceneName;
   if (typeof sceneName !== "string") {
@@ -296,7 +296,7 @@ async function checkSceneItems(client: OBSWebSocketClient): Promise<PreflightChe
     : { id: "scene-items", status: "pass", message: `${items.length} item(s) in ${sceneName} have a size` };
 }
 
-const SETTINGS_DIALOG_NOTE: PreflightCheck = {
+export const SETTINGS_DIALOG_NOTE: PreflightCheck = {
   id: "settings-dialog",
   status: "unknown",
   message: "OBS cannot report open Settings or error dialogs over WebSocket. If a start is accepted but "
@@ -332,7 +332,7 @@ export async function runPreflight(
   return { ready: !checks.some(({ status }) => status === "fail"), checks };
 }
 
-const STATUS_MARK: Record<PreflightStatus, string> = {
+export const STATUS_MARK: Record<PreflightStatus, string> = {
   pass: "ok  ",
   warn: "warn",
   fail: "FAIL",

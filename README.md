@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Tom-R-Main/OBS-MCP/actions/workflows/ci.yml/badge.svg)](https://github.com/Tom-R-Main/OBS-MCP/actions/workflows/ci.yml)
 
-OBS MCP gives MCP clients a current, inspectable interface to OBS Studio. It exposes 174 tools for scenes, sources, audio, transitions, filters, recording, streaming, canvases, and the rest of the OBS WebSocket v5 request surface.
+OBS MCP gives MCP clients a current, inspectable interface to OBS Studio. It exposes 178 tools for scenes, sources, audio, transitions, filters, recording, streaming, canvases, and the rest of the OBS WebSocket v5 request surface.
 
 The server is built against MCP 2026-07-28 and still accepts legacy 2025-era clients. MCP discovery stays available when OBS is closed, and the server reconnects in the background when OBS returns.
 
@@ -110,7 +110,7 @@ The server never prints the password. Connection and protocol diagnostics are wr
 
 ## Tool surface
 
-The 174 tools are organized around the OBS protocol rather than a smaller opinionated workflow:
+The 178 tools are organized around the OBS protocol rather than a smaller opinionated workflow:
 
 - server status, version information, statistics, hotkeys, and studio mode
 - scenes, groups, sources, filters, and scene items
@@ -123,6 +123,8 @@ The 174 tools are organized around the OBS protocol rather than a smaller opinio
 - `obs-record-clip`, which preflights, records up to 50 seconds with chapter markers, stops, and checks the file's length and audio with ffprobe/ffmpeg when they are installed. While it records, it watches the take (see [Watching a take](#watching-a-take))
 - `obs-take-start`, `obs-take-mark`, `obs-take-status`, and `obs-take-stop` for a watched recording of any length, with a chapter per step (see [Watching a take](#watching-a-take))
 - `obs-trim-take`, which cuts dead time out of a recording, and `obs-contact-sheet`, which tiles frames from it into one image (see [Trimming a take](#trimming-a-take))
+- a stream preflight (`obs-stream-preflight`) that checks the service, key, encoder, bitrate, performance, and streamed audio before going live
+- `obs-stream-watch-start`, `obs-stream-watch-status`, and `obs-stream-watch-stop`, which watch a live stream's bitrate, dropped frames, congestion, reconnects, audio, and picture and rate its health (see [Watching a stream](#watching-a-stream))
 - `obs-apply-scene`, which takes a description of a scene and makes OBS match it (see [Describing a scene](#describing-a-scene))
 - `obs-snapshot` and `obs-restore`, which save the state of inputs and scene items and later undo changes to them (see [Undoing changes](#undoing-changes))
 - `obs-capture-window` (macOS), which points a `screen_capture` input at a window or app by name, silences it, and fits it to the canvas
@@ -148,7 +150,7 @@ Every tool is registered by default. Clients load each registered tool's definit
 | `filters` | source filters |
 | `transitions` | transitions, overrides, the T-Bar |
 | `record` | recording, chapters, `obs-preflight`, `obs-record-clip`, the `obs-take-*` tools, `obs-trim-take`, and `obs-contact-sheet` |
-| `stream` | streaming and captions |
+| `stream` | streaming, captions, `obs-stream-preflight`, and the `obs-stream-watch-*` tools |
 | `outputs` | virtual camera, replay buffer, and generic outputs |
 | `config` | profiles, scene collections, video settings, persistent data |
 | `ui` | studio mode, dialogs, projectors |
@@ -169,10 +171,11 @@ Resources give clients that support them a live view without tool calls. Each on
 | `obs://scene/{sceneName}/items` | `GetSceneItemList` | items added, removed, reordered, shown, hidden, locked |
 | `obs://scene/{sceneName}/screenshot` | 960px JPEG of the scene | (read on demand) |
 | `obs://take/current` | the running take: audio levels, skipped frames, black or unchanging picture, chapters, warnings | a warning or chapter |
+| `obs://stream/health` | the stream watch: health and reasons, bitrate, dropped frames, congestion, reconnects, streamed audio, warnings | a warning, or the stream going live or offline |
 
 Clients on the 2025 protocol receive `notifications/resources/updated` for URIs they subscribe to; 2026-07-28 clients choose them on their `subscriptions/listen` stream.
 
-Three prompts appear as slash commands in clients that show MCP prompts: `record-demo` (capture a window silently, preflight, record a clip), `software-demo` (the bounded demo recipe below), and `pre-stream-check` (a read-only go/no-go review).
+Three prompts appear as slash commands in clients that show MCP prompts: `record-demo` (capture a window silently, preflight, record a clip), `software-demo` (the bounded demo recipe below), and `pre-stream-check` (a read-only go/no-go review built on `obs-stream-preflight`).
 
 ### Confirming live actions
 
@@ -216,6 +219,37 @@ While a take records, the server watches OBS instead of waiting for the file:
 - **Picture**: once a second it takes a 96-pixel-wide PPM screenshot of the program scene. Two black samples in a row raise a warning (a capture that lost its window or permission looks like this). Stretches of 3 seconds or more where the picture holds still are recorded as stills, which mark dead time to trim. A spinner or a shimmering "thinking" label counts as still; text that appears and stays does not (see below).
 
 The result lists the findings, and when OBS records to this machine the server writes them next to the recording as `<name>.take.json`, with chapter times and OBS events (scene switches, mutes, output state) in seconds from the start. `obs://take/current` shows the same data while the take runs.
+
+### Watching a stream
+
+Before going live, `obs-stream-preflight` checks, without changing anything:
+
+- the stream is not already live or reconnecting
+- a service with an ingest server and stream key is set (or a custom `rtmp://`, `rtmps://`, `srt://`, `rist://`, or WHIP URL). The key is never returned, and custom servers are shown as scheme and host only, since their path or query often carries the key
+- the stream encoder exists on the platform OBS runs on, and no output settings are waiting for an OBS restart
+- the bitrate: in Simple output mode, against `maxBitrateKbps` (the service's limit) and against the output resolution and frame rate. Advanced mode keeps the stream bitrate in `streamEncoder.json`, which OBS WebSocket cannot read, so it reports unknown
+- OBS keeps up with its frame rate and is not short of GPU, encoder, or CPU
+- at least one unmuted, audible input feeds the audio track the stream carries (track 1 in Simple mode, `AdvOut/TrackIndex` in Advanced mode)
+- the program scene's visible items have a size
+
+`obs-stream-watch-start` then watches until `obs-stream-watch-stop`. It never starts or stops the stream. It can be started before going live, and it keeps watching if the stream stops and starts again:
+
+- **Network**: it polls `GetStreamStatus` every 2 seconds for bytes sent, frames dropped on the network, and congestion, and follows `StreamStateChanged` for reconnects. The bitrate is compared with `targetKbps`, or the Simple-mode profile's video plus audio bitrate. With no target, low bitrate is not reported.
+- **Output**: no data sent for two polls in a row while live is a stall; the stream going offline while watched is reported.
+- **Performance**: it polls `GetStats` for frames missed rendering or skipped encoding while live.
+- **Audio**: it subscribes to `InputVolumeMeters` and follows only inputs on the streamed track. No audio above `silenceThresholdDb` (−50 dBFS) for `deadAirSeconds` (10) is dead air; a peak at −0.5 dBFS or above is clipping.
+- **Picture**: every 2 seconds it takes a 96-pixel-wide PPM screenshot of the program scene; two black samples in a row raise a warning.
+
+`obs-stream-watch-status` rates the last 30 seconds:
+
+| Health | When |
+|---|---|
+| `offline` | the stream is not live |
+| `bad` | reconnecting, stalled, black picture, 5% or more of frames dropped, or under a quarter of the target bitrate |
+| `degraded` | 1% or more of frames dropped, missed rendering, or skipped encoding; congestion at 50% or more; under half the target bitrate; dead air; or a reconnect in the window |
+| `good` | none of the above |
+
+Each rating comes with its reasons. `obs://stream/health` shows the same data and updates when a warning is raised or the stream goes live or offline. The watch tools are read-only, so they are available in read-only mode and to every client sharing a server, whoever holds control.
 
 ### Bounded software demos
 
@@ -337,7 +371,7 @@ Test the file users will actually install with:
 npm run test:package
 ```
 
-That command creates `dist/obs-studio.mcpb`, extracts it into a temporary directory, validates its manifest and source contents, checks all 174 tool definitions, and calls the extracted server through MCP against fake OBS, including a read-only scene audit.
+That command creates `dist/obs-studio.mcpb`, extracts it into a temporary directory, validates its manifest and source contents, checks all 178 tool definitions, and calls the extracted server through MCP against fake OBS, including a read-only scene audit.
 
 ### Live OBS tests
 

@@ -85,12 +85,11 @@ export function initialize(server: McpServer): void {
     () => userMessage([
       "Check whether OBS is ready to go live. Use only read-only tools and change nothing.",
       "",
-      "1. obs-get-status and obs-get-stats: connection, dropped or skipped frames, CPU, and free disk space.",
-      "2. obs-get-stream-status and obs-get-stream-service-settings: the stream is not already live and a service is configured. Never repeat the stream key back.",
-      "3. obs-get-current-scene and obs-get-scene-items: the program scene has visible, correctly sized sources. Take one obs-get-source-screenshot of the program scene and describe it.",
-      "4. obs-get-input-list with obs-get-input-mute and obs-get-input-volume for audio inputs: say which are live, muted, or silent.",
-      "5. obs-preflight: report any failures that also apply to streaming (encoder, output settings).",
-      "Finish with a short go / no-go summary and the specific fixes you recommend.",
+      "1. obs-stream-preflight: report every failed, warned, or unknown check. Never repeat the stream key back.",
+      "2. Take one obs-get-source-screenshot of the program scene and describe it: the preflight checks sizes, not content.",
+      "3. obs-get-input-list with obs-get-input-mute and obs-get-input-volume for audio inputs: say which are live, muted, or silent.",
+      "Finish with a short go / no-go summary and the specific fixes you recommend. If it is a go, suggest "
+        + "obs-stream-watch-start so the stream's health is watched once it is live.",
     ].join("\n")),
   );
 }

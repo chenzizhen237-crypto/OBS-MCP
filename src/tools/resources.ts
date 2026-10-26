@@ -6,6 +6,8 @@
 import { ResourceTemplate, type McpServer } from "@modelcontextprotocol/server";
 import type { OBSWebSocketClient } from "../client.js";
 import { screenshotResult } from "./screenshot.js";
+import { activeStreamWatch, streamUpdates } from "./stream-monitor.js";
+import { jsonSummary } from "./stream-watch.js";
 import { activeTake, takeUpdates } from "./take-monitor.js";
 
 type JsonObject = Record<string, unknown>;
@@ -13,6 +15,7 @@ type JsonObject = Record<string, unknown>;
 export const STATUS_URI = "obs://status";
 export const SCENES_URI = "obs://scenes";
 export const TAKE_URI = "obs://take/current";
+export const STREAM_HEALTH_URI = "obs://stream/health";
 export const sceneItemsUri = (sceneName: string) => `obs://scene/${encodeURIComponent(sceneName)}/items`;
 
 const SCREENSHOT_WIDTH = 960;
@@ -111,6 +114,21 @@ export function initialize(server: McpServer, client: OBSWebSocketClient, { sess
   );
 
   server.registerResource(
+    "stream-health",
+    STREAM_HEALTH_URI,
+    {
+      title: "Stream health",
+      description: "While obs-stream-watch-start runs: health rating with reasons, bitrate, dropped frames, "
+        + "congestion, reconnects, streamed audio, and warnings; updates when a warning is raised or the stream goes live or offline",
+      mimeType: "application/json",
+    },
+    async (uri) => {
+      const watch = activeStreamWatch(client);
+      return json(uri.href, watch ? jsonSummary(watch.summary()) : { watching: false });
+    },
+  );
+
+  server.registerResource(
     "scenes",
     SCENES_URI,
     {
@@ -200,10 +218,13 @@ export function forwardResourceEvents(
   ];
   for (const [event, listener] of listeners) client.on(event, listener);
   const onTakeUpdate = () => onUpdated(TAKE_URI);
+  const onStreamUpdate = () => onUpdated(STREAM_HEALTH_URI);
   takeUpdates.on("update", onTakeUpdate);
+  streamUpdates.on("update", onStreamUpdate);
   return () => {
     for (const [event, listener] of listeners) client.off(event, listener);
     takeUpdates.off("update", onTakeUpdate);
+    streamUpdates.off("update", onStreamUpdate);
   };
 }
 
